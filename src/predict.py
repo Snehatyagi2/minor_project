@@ -1,5 +1,6 @@
 import pickle
 import numpy as np
+import pandas as pd
 from src.api_pollution import get_pollution, get_pollution_history
 from src.api_weather import get_weather
 from src.logic import pollution_score, locality_type, detailed_reason
@@ -10,16 +11,16 @@ def load_model():
         return pickle.load(f)
     
 
-def satellite_downscaling(temp, humidity):
+def satellite_downscaling(temp, humidity, lat, lon):
     from src.satellite import generate_satellite_grid
 
     model = load_model()
-    grid = generate_satellite_grid()
+    grid = generate_satellite_grid(lat, lon)
 
     results = []
 
     for point in grid:
-        data = np.array([[point["no2"], temp, humidity]])
+        data = pd.DataFrame([[point["no2"], temp, humidity]], columns=["NO2", "Temperature", "Humidity"])
         aqi = model.predict(data)[0]
 
         results.append({
@@ -33,7 +34,8 @@ def satellite_downscaling(temp, humidity):
 
 def predict_aqi(no2, temp, humidity):
     model = load_model()
-    return model.predict([[no2,temp,humidity]])[0]
+    data = pd.DataFrame([[no2, temp, humidity]], columns=["NO2", "Temperature", "Humidity"])
+    return float(model.predict(data)[0])
 
 
 def smart_forecast(no2, temp, humidity, history):
@@ -48,8 +50,9 @@ def smart_forecast(no2, temp, humidity, history):
         adjusted_temp = temp + i*0.2
         adjusted_humidity = humidity + i*0.8
 
-        pred = model.predict([[adjusted_no2, adjusted_temp, adjusted_humidity]])[0]
-        preds.append(round(pred,2))
+        data = pd.DataFrame([[adjusted_no2, adjusted_temp, adjusted_humidity]], columns=["NO2", "Temperature", "Humidity"])
+        pred = model.predict(data)[0]
+        preds.append(round(float(pred), 2))
 
     return preds
 
@@ -64,7 +67,7 @@ def generate_report(city="Delhi"):
     if not pollution or weather is None:
         return None
 
-    temp, humidity = weather
+    temp, humidity, lat, lon = weather
 
     report = []
 
