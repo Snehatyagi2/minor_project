@@ -538,7 +538,7 @@ with nav_right:
         )
     
     with ctrl3:
-        run_analysis = st.button("🚀 Run", use_container_width=True)
+        run_analysis = st.button("Run", use_container_width=True)
 
 with st.expander("ℹ️ System Information & AQI Legend"):
     ecol1, ecol2 = st.columns(2)
